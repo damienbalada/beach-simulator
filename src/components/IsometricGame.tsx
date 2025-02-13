@@ -16,12 +16,12 @@ const WATER_PERCENTAGE = 0.2;
 const IsometricGame = () => {
   const [grid, setGrid] = useState<Cell[]>(() => {
     const cells: Cell[] = [];
-    const waterRows = Math.floor(GRID_SIZE * WATER_PERCENTAGE);
+    const waterColumns = Math.floor(GRID_SIZE * WATER_PERCENTAGE);
 
     for (let y = 0; y < GRID_SIZE; y++) {
       for (let x = 0; x < GRID_SIZE; x++) {
-        // Si on est dans les 20% inférieurs, c'est de l'eau
-        const isWater = y >= GRID_SIZE - waterRows;
+        // Si on est dans les 20% de gauche, c'est de l'eau
+        const isWater = x < waterColumns;
         cells.push({
           x,
           y,
