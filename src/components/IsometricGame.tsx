@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from "@/lib/utils";
 
 type TerrainType = 'water' | 'sand';
@@ -12,6 +12,8 @@ interface Cell {
 
 const GRID_SIZE = 30;
 const WATER_PERCENTAGE = 0.2;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2;
 
 const IsometricGame = () => {
   const [grid, setGrid] = useState<Cell[]>(() => {
@@ -32,8 +34,32 @@ const IsometricGame = () => {
     return cells;
   });
 
+  const [zoom, setZoom] = useState(0.8);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    setZoom(currentZoom => {
+      const newZoom = currentZoom - (e.deltaY * 0.001);
+      return Math.min(Math.max(newZoom, MIN_ZOOM), MAX_ZOOM);
+    });
+  };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
   return (
-    <div className="w-full h-full overflow-auto p-4">
+    <div 
+      ref={containerRef}
+      className="w-full h-full overflow-hidden p-4"
+    >
       <style>
         {`
           @keyframes waterWave {
@@ -53,12 +79,13 @@ const IsometricGame = () => {
         `}
       </style>
       <div 
-        className="relative"
+        className="relative left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
         style={{
-          transform: 'rotateX(60deg) rotateZ(-45deg)',
+          transform: `rotateX(60deg) rotateZ(-45deg) scale(${zoom})`,
           transformStyle: 'preserve-3d',
           width: `${GRID_SIZE * 32}px`,
-          height: `${GRID_SIZE * 32}px`
+          height: `${GRID_SIZE * 32}px`,
+          transition: 'transform 0.1s ease-out'
         }}
       >
         {grid.map((cell) => (
