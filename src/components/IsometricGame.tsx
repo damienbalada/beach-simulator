@@ -35,6 +35,9 @@ const IsometricGame = () => {
   });
 
   const [zoom, setZoom] = useState(0.8);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleWheel = (e: WheelEvent) => {
@@ -43,6 +46,27 @@ const IsometricGame = () => {
       const newZoom = currentZoom - (e.deltaY * 0.001);
       return Math.min(Math.max(newZoom, MIN_ZOOM), MAX_ZOOM);
     });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    
+    setPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
   };
 
   useEffect(() => {
@@ -58,7 +82,11 @@ const IsometricGame = () => {
   return (
     <div 
       ref={containerRef}
-      className="w-full h-full overflow-hidden p-4"
+      className="w-full h-full overflow-hidden p-4 cursor-grab active:cursor-grabbing"
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
     >
       <style>
         {`
@@ -81,11 +109,11 @@ const IsometricGame = () => {
       <div 
         className="relative left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
         style={{
-          transform: `rotateX(60deg) rotateZ(-45deg) scale(${zoom})`,
+          transform: `translate(${position.x}px, ${position.y}px) rotateX(60deg) rotateZ(-45deg) scale(${zoom})`,
           transformStyle: 'preserve-3d',
           width: `${GRID_SIZE * 32}px`,
           height: `${GRID_SIZE * 32}px`,
-          transition: 'transform 0.1s ease-out'
+          transition: isDragging ? 'none' : 'transform 0.1s ease-out'
         }}
       >
         {grid.map((cell) => (
