@@ -1,140 +1,121 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { cn } from "@/lib/utils";
-
-type TerrainType = 'water' | 'sand';
-
-interface Cell {
-  x: number;
-  y: number;
-  type: TerrainType;
-}
+import React, { useEffect, useRef } from 'react';
+import Phaser from 'phaser';
 
 const GRID_SIZE = 30;
+const TILE_WIDTH = 32;
+const TILE_HEIGHT = 32;
 const WATER_PERCENTAGE = 0.2;
-const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 2;
 
-const IsometricGame = () => {
-  const [grid, setGrid] = useState<Cell[]>(() => {
-    const cells: Cell[] = [];
+class IsometricScene extends Phaser.Scene {
+  private cameraDragStart: Phaser.Math.Vector2 | null = null;
+
+  constructor() {
+    super({ key: 'IsometricScene' });
+  }
+
+  create() {
+    // Création de la grille
     const waterColumns = Math.floor(GRID_SIZE * WATER_PERCENTAGE);
 
     for (let y = 0; y < GRID_SIZE; y++) {
       for (let x = 0; x < GRID_SIZE; x++) {
-        // Si on est dans les 20% de gauche, c'est de l'eau
         const isWater = x < waterColumns;
-        cells.push({
-          x,
-          y,
-          type: isWater ? 'water' : 'sand'
-        });
+        
+        // Conversion des coordonnées cartésiennes en coordonnées isométriques
+        const isoX = (x - y) * TILE_WIDTH / 2;
+        const isoY = (x + y) * TILE_HEIGHT / 4;
+
+        // Création du tile
+        const tile = this.add.rectangle(
+          isoX + this.cameras.main.centerX,
+          isoY + this.cameras.main.centerY - GRID_SIZE * TILE_HEIGHT / 4,
+          TILE_WIDTH,
+          TILE_HEIGHT,
+          isWater ? 0x0EA5E9 : 0xFEF3C7
+        );
+        tile.setStrokeStyle(1, 0xD1D5DB);
+
+        if (isWater) {
+          // Animation pour l'eau
+          this.tweens.add({
+            targets: tile,
+            y: isoY + this.cameras.main.centerY - GRID_SIZE * TILE_HEIGHT / 4 - 2,
+            duration: 2000,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+            repeat: -1,
+            delay: (x + y) * 200 % 1000
+          });
+        }
       }
     }
-    return cells;
-  });
 
-  const [zoom, setZoom] = useState(0.8);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
+    // Configuration de la caméra
+    this.cameras.main.setZoom(0.8);
 
-  const handleWheel = (e: WheelEvent) => {
-    e.preventDefault();
-    setZoom(currentZoom => {
-      const newZoom = currentZoom - (e.deltaY * 0.001);
-      return Math.min(Math.max(newZoom, MIN_ZOOM), MAX_ZOOM);
+    // Gestion du zoom avec la molette
+    this.input.on('wheel', (pointer: any, gameObjects: any, deltaX: number, deltaY: number) => {
+      const zoom = this.cameras.main.zoom;
+      const newZoom = zoom - deltaY * 0.001;
+      this.cameras.main.setZoom(Phaser.Math.Clamp(newZoom, 0.5, 2));
     });
-  };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y
+    // Gestion du drag pour déplacer la vue
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      this.cameraDragStart = pointer.position.clone();
+      this.input.on('pointermove', this.handleCameraDrag, this);
     });
-  };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    
-    setPosition({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y
+    this.input.on('pointerup', () => {
+      this.cameraDragStart = null;
+      this.input.off('pointermove', this.handleCameraDrag, this);
     });
-  };
+  }
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+  private handleCameraDrag(pointer: Phaser.Input.Pointer) {
+    if (!this.cameraDragStart) return;
+
+    const deltaX = pointer.x - this.cameraDragStart.x;
+    const deltaY = pointer.y - this.cameraDragStart.y;
+
+    this.cameras.main.scrollX -= deltaX;
+    this.cameras.main.scrollY -= deltaY;
+
+    this.cameraDragStart = pointer.position.clone();
+  }
+}
+
+const IsometricGame = () => {
+  const gameRef = useRef<Phaser.Game | null>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    if (gameRef.current) return;
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
+    const config: Phaser.Types.Core.GameConfig = {
+      type: Phaser.AUTO,
+      parent: 'phaser-container',
+      width: window.innerWidth,
+      height: window.innerHeight,
+      backgroundColor: '#ffffff',
+      scene: IsometricScene,
+      scale: {
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+      }
+    };
+
+    gameRef.current = new Phaser.Game(config);
+
     return () => {
-      container.removeEventListener('wheel', handleWheel);
+      if (gameRef.current) {
+        gameRef.current.destroy(true);
+        gameRef.current = null;
+      }
     };
   }, []);
 
-  return (
-    <div 
-      ref={containerRef}
-      className="w-full h-full overflow-hidden p-4 cursor-grab active:cursor-grabbing"
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
-      <style>
-        {`
-          @keyframes waterWave {
-            0%, 100% {
-              background-color: #0EA5E9;
-              transform: translateY(0);
-            }
-            50% {
-              background-color: #33C3F0;
-              transform: translateY(-2px);
-            }
-          }
-          .water-cell {
-            animation: waterWave 2s ease-in-out infinite;
-            animation-delay: calc(var(--animation-delay) * 200ms);
-          }
-        `}
-      </style>
-      <div 
-        className="relative left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
-        style={{
-          transform: `translate(${position.x}px, ${position.y}px) rotateX(60deg) rotateZ(-45deg) scale(${zoom})`,
-          transformStyle: 'preserve-3d',
-          width: `${GRID_SIZE * 32}px`,
-          height: `${GRID_SIZE * 32}px`,
-          transition: isDragging ? 'none' : 'transform 0.1s ease-out'
-        }}
-      >
-        {grid.map((cell) => (
-          <div
-            key={`${cell.x}-${cell.y}`}
-            className={cn(
-              "absolute w-8 h-8 border border-gray-300 transition-colors",
-              cell.type === 'water' 
-                ? 'water-cell bg-sky-500' 
-                : 'bg-amber-100'
-            )}
-            style={{
-              left: `${cell.x * 32}px`,
-              top: `${cell.y * 32}px`,
-              '--animation-delay': (cell.x + cell.y) % 5,
-            } as React.CSSProperties}
-          />
-        ))}
-      </div>
-    </div>
-  );
+  return <div id="phaser-container" className="w-full h-full" />;
 };
 
 export default IsometricGame;
