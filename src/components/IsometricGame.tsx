@@ -3,8 +3,8 @@ import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 
 const GRID_SIZE = 30;
-const TILE_WIDTH = 32;
-const TILE_HEIGHT = 32;
+const TILE_WIDTH = 64;  // Augmenté pour mieux voir les losanges
+const TILE_HEIGHT = 32; // La moitié de la largeur pour un vrai rendu isométrique
 const WATER_PERCENTAGE = 0.2;
 
 class IsometricScene extends Phaser.Scene {
@@ -20,18 +20,25 @@ class IsometricScene extends Phaser.Scene {
 
     for (let y = 0; y < GRID_SIZE; y++) {
       for (let x = 0; x < GRID_SIZE; x++) {
-        const isWater = x < waterColumns;
+        // L'eau est maintenant en bas à gauche (y > GRID_SIZE - waterColumns)
+        const isWater = y > GRID_SIZE - waterColumns;
         
         // Conversion des coordonnées cartésiennes en coordonnées isométriques
         const isoX = (x - y) * TILE_WIDTH / 2;
-        const isoY = (x + y) * TILE_HEIGHT / 4;
+        const isoY = (x + y) * TILE_HEIGHT / 2;
 
-        // Création du tile
-        const tile = this.add.rectangle(
+        // Création du tile en forme de losange
+        const points = [
+          { x: 0, y: -TILE_HEIGHT / 2 },          // Haut
+          { x: TILE_WIDTH / 2, y: 0 },            // Droite
+          { x: 0, y: TILE_HEIGHT / 2 },           // Bas
+          { x: -TILE_WIDTH / 2, y: 0 }            // Gauche
+        ];
+
+        const tile = this.add.polygon(
           isoX + this.cameras.main.centerX,
           isoY + this.cameras.main.centerY - GRID_SIZE * TILE_HEIGHT / 4,
-          TILE_WIDTH,
-          TILE_HEIGHT,
+          points,
           isWater ? 0x0EA5E9 : 0xFEF3C7
         );
         tile.setStrokeStyle(1, 0xD1D5DB);
