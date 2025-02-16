@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 
 const TILE_WIDTH = 64;
 const TILE_HEIGHT = 32;
-const VISIBLE_TILES = 30; // Nombre de tuiles visibles à la fois
+const VISIBLE_TILES = 30;
 const WATER_PERCENTAGE = 0.2;
 
 class IsometricScene extends Phaser.Scene {
@@ -14,10 +14,6 @@ class IsometricScene extends Phaser.Scene {
 
   constructor() {
     super({ key: 'IsometricScene' });
-  }
-
-  preload() {
-    this.load.image('towel', '/lovable-uploads/09d3e246-d032-43f6-96ad-0af0aaf2722b.png');
   }
 
   create() {
@@ -96,10 +92,18 @@ class IsometricScene extends Phaser.Scene {
           { x: -TILE_WIDTH / 2, y: 0 }
         ];
 
-        // Couleurs aléatoires
-        const baseColor = isWater ? 
-          Phaser.Math.Between(0x00B8EC, 0x34CDF7) :
-          Phaser.Math.Between(0xF5AC3D, 0xF8B451);
+        // Variation légère de couleur pour donner de la texture
+        const variation = Phaser.Math.Between(-10, 10);
+        let baseColor;
+        if (isWater) {
+          // Camaïeu de bleu pour l'eau
+          const blue = Phaser.Math.Clamp(180 + variation, 170, 190);
+          baseColor = Phaser.Display.Color.GetColor(0, 170 + variation, blue);
+        } else {
+          // Camaïeu de beige pour le sable
+          const sandValue = Phaser.Math.Clamp(220 + variation, 210, 230);
+          baseColor = Phaser.Display.Color.GetColor(sandValue, sandValue - 30, sandValue - 60);
+        }
 
         const tile = this.add.polygon(
           isoX + camera.width/2,
@@ -115,7 +119,7 @@ class IsometricScene extends Phaser.Scene {
             targets: tile,
             fillColor: {
               from: baseColor,
-              to: Phaser.Math.Between(0x00B8EC, 0x34CDF7)
+              to: Phaser.Display.Color.GetColor(0, 170 + Phaser.Math.Between(-5, 5), 180 + Phaser.Math.Between(-5, 5))
             },
             duration: 3000,
             ease: 'Sine.easeInOut',
@@ -141,8 +145,7 @@ class IsometricScene extends Phaser.Scene {
           tile.on('pointerdown', () => {
             if (this.cameraDragStart || !this.lastHoverPosition) return;
             
-            // Placer une serviette 2x3
-            const towelGroup = this.add.group();
+            // Placer des cases violettes 2x3
             for (let ty = 0; ty < 3; ty++) {
               for (let tx = 0; tx < 2; tx++) {
                 const localX = this.lastHoverPosition.x + tx;
@@ -150,15 +153,13 @@ class IsometricScene extends Phaser.Scene {
                 const towelIsoX = (localX - localY) * TILE_WIDTH / 2;
                 const towelIsoY = (localX + localY) * TILE_HEIGHT / 2;
                 
-                const towel = this.add.image(
+                const towelTile = this.add.polygon(
                   towelIsoX + camera.width/2,
-                  towelIsoY + camera.height/2 - VISIBLE_TILES * TILE_HEIGHT/4 - 5,
-                  'towel'
+                  towelIsoY + camera.height/2 - VISIBLE_TILES * TILE_HEIGHT/4,
+                  points,
+                  0x800080
                 );
-                towel.setScale(0.5);
-                towel.setRotation(-Math.PI / 4);
-                towel.setTint(0x800080); // Violet
-                towelGroup.add(towel);
+                towelTile.setStrokeStyle(1, 0x600060);
               }
             }
           });
