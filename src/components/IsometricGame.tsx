@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 
@@ -96,9 +95,7 @@ class IsometricScene extends Phaser.Scene {
         const variation = Phaser.Math.Between(-10, 10);
         let baseColor;
         if (isWater) {
-          // Camaïeu de bleu pour l'eau
-          const blue = Phaser.Math.Clamp(180 + variation, 170, 190);
-          baseColor = Phaser.Display.Color.GetColor(0, 170 + variation, blue);
+          baseColor = 0x0099CC; // Bleu clair uniforme pour l'eau
         } else {
           // Camaïeu de beige pour le sable
           const sandValue = Phaser.Math.Clamp(220 + variation, 210, 230);
@@ -119,13 +116,13 @@ class IsometricScene extends Phaser.Scene {
             targets: tile,
             fillColor: {
               from: baseColor,
-              to: Phaser.Display.Color.GetColor(0, 170 + Phaser.Math.Between(-5, 5), 180 + Phaser.Math.Between(-5, 5))
+              to: 0x00A8DC
             },
-            duration: 3000,
+            duration: 2000,
             ease: 'Sine.easeInOut',
             yoyo: true,
             repeat: -1,
-            delay: (worldX + worldY) * 100 % 2000
+            delay: (worldX + worldY) * 100 % 1000
           });
         } else {
           // Gestion du hover et du clic sur le sable
