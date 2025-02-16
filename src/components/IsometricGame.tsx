@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 
@@ -95,7 +96,7 @@ class IsometricScene extends Phaser.Scene {
         const variation = Phaser.Math.Between(-10, 10);
         let baseColor;
         if (isWater) {
-          baseColor = 0x0099CC; // Bleu clair uniforme pour l'eau
+          baseColor = 0x0099CC;
         } else {
           // Camaïeu de beige pour le sable
           const sandValue = Phaser.Math.Clamp(220 + variation, 210, 230);
@@ -115,7 +116,7 @@ class IsometricScene extends Phaser.Scene {
           this.tweens.add({
             targets: tile,
             fillColor: {
-              from: baseColor,
+              from: 0x0099CC,
               to: 0x00A8DC
             },
             duration: 2000,
