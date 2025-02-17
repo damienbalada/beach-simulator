@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 
@@ -80,8 +79,9 @@ class IsometricScene extends Phaser.Scene {
         const worldX = Math.floor((camera.scrollX - visibleWidth/2) / TILE_WIDTH) + x;
         const worldY = Math.floor((camera.scrollY - visibleHeight/2) / TILE_HEIGHT) + y;
         
-        // L'eau est maintenant sur la gauche plutôt qu'en bas
-        const isWater = worldX < Math.floor(VISIBLE_TILES * WATER_PERCENTAGE);
+        // L'eau est en bas à gauche
+        const isWater = worldY > VISIBLE_TILES - Math.floor(VISIBLE_TILES * WATER_PERCENTAGE) && 
+                       worldX < Math.floor(VISIBLE_TILES * WATER_PERCENTAGE);
         
         const isoX = (worldX - worldY) * TILE_WIDTH / 2;
         const isoY = (worldX + worldY) * TILE_HEIGHT / 2;
@@ -97,7 +97,7 @@ class IsometricScene extends Phaser.Scene {
         const variation = Phaser.Math.Between(-10, 10);
         let baseColor;
         if (isWater) {
-          baseColor = 0x0099CC;
+          baseColor = 0x0099CC; // Bleu fixe pour l'eau, sans animation
         } else {
           // Camaïeu de beige pour le sable
           const sandValue = Phaser.Math.Clamp(220 + variation, 210, 230);
@@ -112,21 +112,7 @@ class IsometricScene extends Phaser.Scene {
         );
         tile.setStrokeStyle(1, 0xD1D5DB);
 
-        // Gestion de l'eau
-        if (isWater) {
-          this.tweens.add({
-            targets: tile,
-            fillColor: {
-              from: 0x0099CC,
-              to: 0x00A8DC
-            },
-            duration: 2000,
-            ease: 'Sine.easeInOut',
-            yoyo: true,
-            repeat: -1,
-            delay: (worldX + worldY) * 100 % 1000
-          });
-        } else {
+        if (!isWater) {
           // Gestion du hover et du clic sur le sable
           tile.setInteractive();
           tile.setData('gridPos', { x: worldX, y: worldY });
