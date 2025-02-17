@@ -80,7 +80,8 @@ class IsometricScene extends Phaser.Scene {
         const worldX = Math.floor((camera.scrollX - visibleWidth/2) / TILE_WIDTH) + x;
         const worldY = Math.floor((camera.scrollY - visibleHeight/2) / TILE_HEIGHT) + y;
         
-        const isWater = worldY > VISIBLE_TILES - Math.floor(VISIBLE_TILES * WATER_PERCENTAGE);
+        // L'eau est maintenant sur la gauche plutôt qu'en bas
+        const isWater = worldX < Math.floor(VISIBLE_TILES * WATER_PERCENTAGE);
         
         const isoX = (worldX - worldY) * TILE_WIDTH / 2;
         const isoY = (worldX + worldY) * TILE_HEIGHT / 2;
